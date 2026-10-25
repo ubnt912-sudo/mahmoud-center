@@ -1,0 +1,24 @@
+{
+  "name": "محمود سنتر",
+  "short_name": "محمود سنتر",
+  "description": "نظام محمود سنتر — صيانة، مبيعات، مخزون، واشتراكات إنترنت",
+  "id": "/",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B263B",
+  "theme_color": "#1B263B",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "صيانة جديدة", "url": "/admin/repairs?new=1", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "نقطة البيع", "url": "/admin/sales", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

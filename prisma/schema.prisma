@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── المستخدمون ───────────────────────────
+
+enum Role {
+  ADMIN
+  SALES
+  REPAIR
+  INTERNET_STAFF
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role     @default(SALES)
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  repairTimeline        RepairTimeline[]
+  inventoryTransactions InventoryTransaction[]
+  orders                Order[]
+  repliedMessages       Message[]
+}
+
+// ─────────────────────────── الزبائن ───────────────────────────
+
+enum CustomerStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model Customer {
+  id            String         @id @default(uuid())
+  name          String
+  phone         String         @unique
+  address       String?
+  notes         String?
+  customerToken String         @unique @default(uuid())
+  status        CustomerStatus @default(ACTIVE)
+  blockReason   String?
+  blockedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lastVisit     DateTime       @default(now())
+
+  repairs       Repair[]
+  subscriptions InternetSubscription[]
+  orders        Order[]
+  messages      Message[]
+  invoices      Invoice[]
+  feedbacks     Feedback[]
+
+  @@index([name])
+}
+
+// ─────────────────────────── المنتجات والمخزون ───────────────────────────
+
+enum Category {
+  NEW_PHONE
+  USED_PHONE
+  EARBUDS
+  CHARGER
+  ACCESSORY
+  PARTS
+  OTHER
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  sku         String   @unique
+  barcode     String?  @unique
+  name        String
+  category    Category
+  brand       String?
+  model       String?
+  description String?
+  images      String[]
+  costPrice   Float
+  sellPrice   Float
+  oldPrice    Float?
+  stock       Int      @default(0)
+  minStock    Int      @default(5)
+  isOffer     Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions InventoryTransaction[]
+  orderItems   OrderItem[]
+
+  @@index([name])
+  @@index([category])
+}
+
+enum TransactionType {
+  IN
+  OUT
+}
+
+model InventoryTransaction {
+  id           String          @id @default(uuid())
+  productId    String
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type         TransactionType
+  quantity     Int
+  balanceAfter Int             @default(0)
+  reason       String?
+  orderId      String?
+  userId       String?
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────── الصيانة ───────────────────────────
+
+enum RepairStatus {
+  RECEIVED
+  INSPECTING
+  WAITING_APPROVAL
+  REPAIRING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model Repair {
+  id            String       @id @default(uuid())
+  number        Int          @unique @default(autoincrement())
+  repairCode    String       @unique @default(cuid())
+  customerId    String
+  customer      Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  deviceCompany String
+  deviceModel   String
+  imei          String?
+  issue         String
+  techNotes     String?
+  cost          Float        @default(0)
+  paid          Float        @default(0)
+  status        RepairStatus @default(RECEIVED)
+  expectedDate  DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  timeline RepairTimeline[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model RepairTimeline {
+  id        String       @id @default(uuid())
+  repairId  String
+  repair    Repair       @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  status    RepairStatus
+  note      String?
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime     @default(now())
+
+  @@index([repairId])
+}
+
+// ─────────────────────────── الإنترنت ───────────────────────────
+
+enum ISPType {
+  FTTH
+  WIRELESS
+}
+
+enum SubStatus {
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  SUSPENDED
+}
+
+model InternetSubscription {
+  id         String    @id @default(uuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  type       ISPType
+  planName   String
+  speed      String
+  price      Float
+  paid       Float     @default(0)
+  startDate  DateTime
+  endDate    DateTime
+  status     SubStatus @default(ACTIVE)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([customerId])
+  @@index([endDate])
+}
+
+// ─────────────────────────── المبيعات والفواتير ───────────────────────────
+
+enum OrderStatus {
+  NEW
+  REVIEWED
+  PREPARING
+  READY
+  CONTACTED
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  number      Int         @unique @default(autoincrement())
+  orderCode   String      @unique @default(cuid())
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  subtotal    Float       @default(0)
+  discount    Float       @default(0)
+  totalAmount Float
+  status      OrderStatus @default(NEW)
+  note        String?
+  createdById String?
+  createdBy   User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items   OrderItem[]
+  invoice Invoice?
+
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  name      String  @default("")
+  quantity  Int
+  price     Float
+  costPrice Float   @default(0)
+
+  @@index([orderId])
+}
+
+enum InvoiceStatus {
+  PAID
+  PARTIAL
+  UNPAID
+  CANCELLED
+}
+
+model Invoice {
+  id         String        @id @default(uuid())
+  number     Int           @unique @default(autoincrement())
+  orderId    String        @unique
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  total      Float
+  paid       Float
+  status     InvoiceStatus @default(UNPAID)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────── الرسائل والتقييم ───────────────────────────
+
+enum MsgType {
+  REPAIR
+  ORDER
+  PRICE
+  STOCK
+  ISP
+  GENERAL
+}
+
+enum MsgSender {
+  CUSTOMER
+  STAFF
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  referenceId String?
+  type        MsgType
+  sender      MsgSender @default(CUSTOMER)
+  content     String
+  reply       String?
+  repliedAt   DateTime?
+  repliedById String?
+  repliedBy   User?     @relation(fields: [repliedById], references: [id], onDelete: SetNull)
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([isRead])
+}
+
+enum SmileRating {
+  EXCELLENT
+  NEUTRAL
+  POOR
+}
+
+model Feedback {
+  id         String      @id @default(uuid())
+  customerId String
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rating     SmileRating
+  comment    String?
+  createdAt  DateTime    @default(now())
+
+  @@index([customerId])
+}
