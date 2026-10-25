@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin-context';
 import { useApi, useDebounced } from '@/hooks/useApi';
 import { api, qs } from '@/lib/client';
-import { daysLeft, fmtDate, toInputDate } from '@/lib/format';
+import { daysLeft, fmtDate, toInputDate, waPhone } from '@/lib/format';
 import { ISP_TYPE, SUB_STATUS } from '@/lib/labels';
 import CustomerPicker from '@/components/CustomerPicker';
 import { useToast } from '@/components/toast';
@@ -109,7 +109,7 @@ export default function SubscriptionsPage() {
               {data.subscriptions.map((s) => {
                 const d = daysLeft(s.endDate);
                 const wa = encodeURIComponent(
-                  `مرحباً ${s.customer.name} 👋\nاشتراك الإنترنت (${s.planName}) ${d >= 0 ? `ينتهي بعد ${d} يوم بتاريخ ${fmtDate(s.endDate)}` : `انتهى بتاريخ ${fmtDate(s.endDate)}`}.\nللتجديد تواصل معنا — محمود سنتر`
+                  `مرحباً ${s.customer.name} \nاشتراك الإنترنت (${s.planName}) ${d >= 0 ? `ينتهي بعد ${d} يوم بتاريخ ${fmtDate(s.endDate)}` : `انتهى بتاريخ ${fmtDate(s.endDate)}`}.\nللتجديد تواصل معنا — محمود سنتر`
                 );
                 return (
                   <li key={s.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
@@ -140,7 +140,7 @@ export default function SubscriptionsPage() {
                     </div>
                     <StatusBadge map={SUB_STATUS} value={s.status} />
                     <div className="flex">
-                      <a href={`https://wa.me/${s.customer.phone}?text=${wa}`} target="_blank" rel="noreferrer" title="تذكير واتساب" className="flex size-9 items-center justify-center rounded-xl text-[#25D366] hover:bg-emerald-50">
+                      <a href={`https://wa.me/${waPhone(s.customer.phone)}?text=${wa}`} target="_blank" rel="noreferrer" title="تذكير واتساب" className="flex size-9 items-center justify-center rounded-xl text-[#25D366] hover:bg-emerald-50">
                         <WhatsAppIcon className="size-[18px]" />
                       </a>
                       {writable && (

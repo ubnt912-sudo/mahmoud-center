@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizePhone } from './format';
 
 const req = (msg = 'هذا الحقل مطلوب') => z.string({ required_error: msg, invalid_type_error: msg }).trim().min(1, msg);
 const optStr = z
@@ -33,7 +34,7 @@ const reqDate = z.union([z.string(), z.date()]).transform((v, ctx) => {
 
 export const phoneSchema = z
   .string({ required_error: 'رقم الهاتف مطلوب' })
-  .transform((v) => v.replace(/[\s\-()]/g, '').replace(/^\+/, '').replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))))
+  .transform((v) => normalizePhone(v))
   .refine((v) => /^\d{7,15}$/.test(v), 'رقم الهاتف غير صالح (7 إلى 15 رقماً)');
 
 // ───────── Auth / Users

@@ -18,7 +18,7 @@ export const GET = route(
         ? {
             OR: [
               { customer: { name: { contains: q, mode: 'insensitive' } } },
-              { customer: { phone: { contains: q.replace(/\D/g, '') || q } } },
+              { customer: { phone: { contains: q.replace(/\D/g, '').replace(/^0+/, '') || q } } },
               ...(num && num < 2147483647 ? [{ number: num }] : []),
             ],
           }

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useAdmin } from '@/components/admin-context';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/client';
-import { fmtDate, fmtDateTime, repairNo } from '@/lib/format';
+import { fmtDate, fmtDateTime, repairNo, waPhone } from '@/lib/format';
 import { REPAIR_FLOW, REPAIR_STATUS } from '@/lib/labels';
 import RepairForm from '@/components/RepairForm';
 import { useToast } from '@/components/toast';
@@ -69,7 +69,7 @@ export default function RepairDetail() {
 
   const portal = typeof window !== 'undefined' ? `${window.location.origin}/customer/${r.customer.customerToken}` : '';
   const waText = encodeURIComponent(
-    `مرحباً ${r.customer.name} 👋\nحالة جهازك ${r.deviceCompany} ${r.deviceModel} (${repairNo(r.number)}): ${REPAIR_STATUS[r.status].label}\n` +
+    `مرحباً ${r.customer.name} \nحالة جهازك ${r.deviceCompany} ${r.deviceModel} (${repairNo(r.number)}): ${REPAIR_STATUS[r.status].label}\n` +
       (r.status === 'READY' ? `الجهاز جاهز للاستلام ✅${remaining > 0 ? `\nالمبلغ المتبقي: ${Math.round(remaining).toLocaleString('en-US')} د.ع` : ''}\n` : '') +
       `تابع التفاصيل: ${portal}\nمحمود سنتر`
   );
@@ -165,7 +165,7 @@ export default function RepairDetail() {
         </div>
 
         <div className="no-print flex flex-wrap gap-2 border-t border-navy/5 bg-soft/40 p-4">
-          <a href={`https://wa.me/${r.customer.phone}?text=${waText}`} target="_blank" rel="noreferrer" className="btn bg-[#25D366] text-white hover:brightness-95">
+          <a href={`https://wa.me/${waPhone(r.customer.phone)}?text=${waText}`} target="_blank" rel="noreferrer" className="btn bg-[#25D366] text-white hover:brightness-95">
             <WhatsAppIcon className="size-4" /> إشعار الزبون
           </a>
           {writable && (

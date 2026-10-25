@@ -56,7 +56,7 @@ export default function CustomerForm({ open, onClose, customer, onSaved }) {
           dir="ltr"
           inputMode="tel"
           className="[&_input]:text-left"
-          hint="مع رمز الدولة، مثال: 9647701234567"
+          hint="مثال: 07701234567 (يُحوَّل تلقائياً لصيغة واتساب)"
           value={f.phone}
           onChange={(e) => setF({ ...f, phone: e.target.value })}
         />

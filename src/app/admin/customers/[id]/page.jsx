@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useAdmin } from '@/components/admin-context';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/client';
-import { fmtDate, fmtDateTime, invoiceNo, orderNo, repairNo } from '@/lib/format';
+import { fmtDate, fmtDateTime, invoiceNo, orderNo, repairNo, waPhone } from '@/lib/format';
 import { CUSTOMER_STATUS, INVOICE_STATUS, ISP_TYPE, MSG_TYPE, ORDER_STATUS, RATING, REPAIR_STATUS, SUB_STATUS } from '@/lib/labels';
 import CustomerForm from '@/components/CustomerForm';
 import MessageForm from '@/components/MessageForm';
@@ -101,7 +101,7 @@ export default function CustomerDetail() {
               {c.address && <p className="text-xs text-beige/50">{c.address}</p>}
             </div>
             <div className="flex flex-wrap gap-2">
-              <a href={`tel:+${c.phone}`} className="btn bg-white/10 text-white hover:bg-white/20">
+              <a href={`tel:+${waPhone(c.phone)}`} className="btn bg-white/10 text-white hover:bg-white/20">
                 <Icon name="phone" className="size-4" /> اتصال
               </a>
               <a href={data.waLink} target="_blank" rel="noreferrer" className="btn bg-[#25D366] text-white hover:brightness-95">

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useAdmin } from '@/components/admin-context';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/lib/client';
-import { fmtDateTime, invoiceNo, orderNo } from '@/lib/format';
+import { fmtDateTime, invoiceNo, orderNo, waPhone } from '@/lib/format';
 import { INVOICE_STATUS } from '@/lib/labels';
 import { useToast } from '@/components/toast';
 import { Icon, Logo, WhatsAppIcon } from '@/components/icons';
@@ -55,7 +55,7 @@ export default function InvoiceDetail() {
           <Icon name="chevron" className="size-4 rotate-180" /> الفواتير
         </Link>
         <div className="flex flex-wrap gap-2">
-          <a href={`https://wa.me/${inv.customer.phone}?text=${wa}`} target="_blank" rel="noreferrer" className="btn bg-[#25D366] text-white hover:brightness-95">
+          <a href={`https://wa.me/${waPhone(inv.customer.phone)}?text=${wa}`} target="_blank" rel="noreferrer" className="btn bg-[#25D366] text-white hover:brightness-95">
             <WhatsAppIcon className="size-4" /> إرسال
           </a>
           {can('invoices', 'write') && remaining > 0 && inv.status !== 'CANCELLED' && (

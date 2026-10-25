@@ -12,7 +12,7 @@ export const GET = route(
     const q = sp.get('q')?.trim();
     const status = sp.get('status');
     const { take, skip, page } = pagination(sp);
-    const digits = q?.replace(/\D/g, '');
+    const digits = q?.replace(/\D/g, '').replace(/^0+/, '');
     const where = {
       ...(status ? { status } : {}),
       ...(q

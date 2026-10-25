@@ -21,7 +21,7 @@ export const GET = route(
             OR: [
               { planName: { contains: q, mode: 'insensitive' } },
               { customer: { name: { contains: q, mode: 'insensitive' } } },
-              { customer: { phone: { contains: q.replace(/\D/g, '') || q } } },
+              { customer: { phone: { contains: q.replace(/\D/g, '').replace(/^0+/, '') || q } } },
             ],
           }
         : {}),

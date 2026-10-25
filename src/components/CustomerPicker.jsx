@@ -62,7 +62,7 @@ export default function CustomerPicker({ value, onChange, allowNew = true, label
         <div className="grid gap-3 sm:grid-cols-2">
           <Input placeholder="اسم الزبون" value={value?.newName || ''} onChange={(e) => onChange({ ...value, newName: e.target.value })} required />
           <Input
-            placeholder="رقم الهاتف 9647xxxxxxxxx"
+            placeholder="رقم الهاتف 07xxxxxxxxx"
             dir="ltr"
             inputMode="tel"
             className="text-left"

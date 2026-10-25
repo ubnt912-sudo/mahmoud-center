@@ -34,6 +34,22 @@ export function daysLeft(d) {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
 }
 
+/**
+ * تحويل رقم الهاتف إلى الصيغة الدولية (للعراق افتراضياً):
+ * 07713394313 → 9647713394313 ، 7713394313 → 9647713394313 ، 009647... → 9647...
+ */
+export function normalizePhone(p) {
+  let d = String(p || '')
+    .replace(/[٠-٩]/g, (x) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(x)))
+    .replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('0') && d.length === 11) d = '964' + d.slice(1);
+  else if (d.startsWith('7') && d.length === 10) d = '964' + d;
+  return d;
+}
+
+export const waPhone = normalizePhone;
+
 export const pad = (n, w = 5) => String(n ?? '').padStart(w, '0');
 export const invoiceNo = (n) => `INV-${pad(n)}`;
 export const orderNo = (n) => `ORD-${pad(n)}`;

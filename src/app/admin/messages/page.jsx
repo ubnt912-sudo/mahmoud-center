@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin-context';
 import { useApi, useDebounced } from '@/hooks/useApi';
 import { api, qs } from '@/lib/client';
-import { fmtDateTime } from '@/lib/format';
+import { fmtDateTime, waPhone } from '@/lib/format';
 import { MSG_TYPE } from '@/lib/labels';
 import MessageForm from '@/components/MessageForm';
 import { useToast } from '@/components/toast';
@@ -116,7 +116,7 @@ export default function MessagesPage() {
                             </Button>
                           )}
                           <a
-                            href={`https://wa.me/${m.customer.phone}`}
+                            href={`https://wa.me/${waPhone(m.customer.phone)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="btn btn-ghost px-3 py-1.5 text-xs text-[#128C7E]"

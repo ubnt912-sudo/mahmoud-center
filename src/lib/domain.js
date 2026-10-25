@@ -1,6 +1,7 @@
 // منطق الأعمال المشترك على الخادم
 import { prisma } from './prisma';
 import { ApiError } from './api';
+import { waPhone } from './format';
 
 export const EXPIRING_DAYS = 5;
 
@@ -49,7 +50,7 @@ export async function findOrCreateCustomer(tx, { customerId, customerName, custo
     return c;
   }
   if (!customerName || !customerPhone) throw new ApiError(400, 'اختر زبوناً أو أدخل الاسم ورقم الهاتف');
-  const existing = await tx.customer.findUnique({ where: { phone: customerPhone } });
+  const existing = await tx.customer.findFirst({ where: { phone: { in: [customerPhone, '0' + customerPhone.slice(3)] } } });
   if (existing) return existing;
   return tx.customer.create({ data: { name: customerName, phone: customerPhone } });
 }
@@ -69,7 +70,7 @@ export function baseUrl(req) {
 export function portalLinks(req, customer) {
   const link = `${baseUrl(req)}/customer/${customer.customerToken}`;
   const text = encodeURIComponent(
-    `أهلاً ${customer.name} 👋\nهذا رابطك الخاص في محمود سنتر لمتابعة الصيانة والاشتراكات والفواتير:\n${link}`
+    `أهلاً ${customer.name}\nهذا رابطك الخاص في محمود سنتر لمتابعة الصيانة والاشتراكات والفواتير:\n${link}`
   );
-  return { customerLink: link, waLink: `https://wa.me/${customer.phone}?text=${text}` };
+  return { customerLink: link, waLink: `https://wa.me/${waPhone(customer.phone)}?text=${text}` };
 }
