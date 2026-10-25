@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { CATEGORY } from '@/lib/labels';
 import { Button, Input, Modal, Select, Textarea, Toggle } from './ui';
+import ImageUpload from './ImageUpload';
 import { useToast } from './toast';
 
 export default function ProductForm({ open, onClose, product, onSaved }) {
@@ -134,15 +135,34 @@ export default function ProductForm({ open, onClose, product, onSaved }) {
           </div>
         )}
         <Textarea label="الوصف" className="sm:col-span-2" value={f.description} onChange={set('description')} />
-        <Textarea
-          label="روابط الصور"
-          className="sm:col-span-2"
-          rows={2}
-          dir="ltr"
-          hint="رابط في كل سطر (https://...)"
-          value={f.images}
-          onChange={set('images')}
-        />
+        <div className="space-y-2 sm:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="label mb-0">صور المنتج</span>
+            <ImageUpload multiple label="رفع صور" onUploaded={(url) => setF((x) => ({ ...x, images: [x.images, url].filter(Boolean).join('\n') }))} />
+          </div>
+          {f.images && (
+            <div className="flex flex-wrap gap-2">
+              {f.images
+                .split(/\n+/)
+                .filter(Boolean)
+                .map((u, i) => (
+                  <div key={u + i} className="relative size-16 overflow-hidden rounded-xl bg-soft ring-1 ring-navy/10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={u} alt="" className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setF((x) => ({ ...x, images: x.images.split(/\n+/).filter((y, j) => y && j !== i).join('\n') }))}
+                      className="absolute top-0.5 end-0.5 flex size-5 items-center justify-center rounded-full bg-navy/80 text-xs text-white"
+                      aria-label="حذف الصورة"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
+          <Textarea rows={2} dir="ltr" hint="أو الصق روابط صور، رابط في كل سطر" value={f.images} onChange={set('images')} />
+        </div>
         <div className="flex flex-wrap gap-6 sm:col-span-2">
           <Toggle checked={f.isOffer} onChange={(v) => setF({ ...f, isOffer: v })} label="ضمن العروض 🔥" />
           <Toggle checked={f.isActive} onChange={(v) => setF({ ...f, isActive: v })} label="متاح للبيع" />

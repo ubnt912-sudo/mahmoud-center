@@ -3,7 +3,7 @@ import { SESSION_COOKIE, verifySession } from '@/lib/session';
 import { can } from '@/lib/permissions';
 
 // مسارات API لا تحتاج تسجيل دخول
-const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/portal/', '/api/health'];
+const PUBLIC_API = ['/api/auth/login', '/api/auth/logout', '/api/portal/', '/api/health', '/api/media/'];
 
 // ربط صفحات الإدارة بالصلاحية المطلوبة
 const PAGE_RESOURCES = [
@@ -18,6 +18,7 @@ const PAGE_RESOURCES = [
   ['/admin/feedback', 'feedback'],
   ['/admin/users', 'users'],
   ['/admin/stats', 'stats'],
+  ['/admin/posts', 'posts'],
 ];
 
 export async function middleware(req) {

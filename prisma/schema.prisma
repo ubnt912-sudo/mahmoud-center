@@ -334,3 +334,36 @@ model Feedback {
 
   @@index([customerId])
 }
+
+// ─────────────────────────── الإعلانات والوسائط ───────────────────────────
+
+enum MediaType {
+  NONE
+  IMAGE
+  VIDEO
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  title     String
+  body      String?
+  mediaType MediaType @default(NONE)
+  mediaUrl  String?
+  linkUrl   String?
+  category  Category?
+  isPinned  Boolean   @default(false)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([isActive, createdAt])
+}
+
+// صور مرفوعة من لوحة الإدارة (تُخزَّن في قاعدة البيانات بعد ضغطها)
+model Media {
+  id        String   @id @default(uuid())
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+}

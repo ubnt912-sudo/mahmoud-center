@@ -26,6 +26,7 @@ export const PERMISSIONS = {
     feedback: ALL,
     users: ALL,
     stats: ALL,
+    posts: ALL,
   },
   SALES: {
     dashboard: ['read'],
@@ -38,6 +39,7 @@ export const PERMISSIONS = {
     feedback: ['read'],
     repairs: ['read'],
     subscriptions: ['read'],
+    posts: ['read', 'write'],
   },
   REPAIR: {
     dashboard: ['read'],

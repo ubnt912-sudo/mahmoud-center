@@ -21,6 +21,7 @@ export const NAV = [
   { href: '/admin/inventory', label: 'المخزون', icon: 'layers', resource: 'inventory' },
   { href: '/admin/subscriptions', label: 'الإنترنت', icon: 'wifi', resource: 'subscriptions' },
   { href: '/admin/messages', label: 'الرسائل', icon: 'message', resource: 'messages', badge: 'messages' },
+  { href: '/admin/posts', label: 'الإعلانات', icon: 'megaphone', resource: 'posts' },
   { href: '/admin/feedback', label: 'التقييمات', icon: 'smile', resource: 'feedback' },
   { href: '/admin/stats', label: 'الإحصائيات', icon: 'chart', resource: 'stats' },
   { href: '/admin/users', label: 'المستخدمون', icon: 'shield', resource: 'users' },

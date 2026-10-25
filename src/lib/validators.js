@@ -263,3 +263,34 @@ export const feedbackSchema = z.object({
   rating: z.enum(['EXCELLENT', 'NEUTRAL', 'POOR'], { errorMap: () => ({ message: 'اختر تقييماً' }) }),
   comment: optStr.pipe(z.string().max(500, 'التعليق طويل جداً').nullable().optional()),
 });
+
+// ───────── Posts (الإعلانات)
+const mediaUrl = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => (typeof v === 'string' ? v.trim() || null : v ?? undefined))
+  .refine((v) => !v || /^(https?:\/\/|\/api\/media\/)/.test(v), 'الرابط يجب أن يبدأ بـ http');
+
+export const postSchema = z
+  .object({
+    title: req('عنوان الإعلان مطلوب').pipe(z.string().max(150, 'العنوان طويل جداً')),
+    body: optStr,
+    mediaType: z.enum(['NONE', 'IMAGE', 'VIDEO']).default('NONE'),
+    mediaUrl,
+    linkUrl: mediaUrl,
+    category: z.union([z.enum(CATEGORIES), z.literal(''), z.null()]).optional().transform((v) => (v === '' ? null : v)),
+    isPinned: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((d) => d.mediaType === 'NONE' || d.mediaUrl, { message: 'أضف صورة أو رابط الفيديو', path: ['mediaUrl'] });
+
+export const postUpdateSchema = z.object({
+  title: req().pipe(z.string().max(150)).optional(),
+  body: optStr,
+  mediaType: z.enum(['NONE', 'IMAGE', 'VIDEO']).optional(),
+  mediaUrl,
+  linkUrl: mediaUrl,
+  category: z.union([z.enum(CATEGORIES), z.literal(''), z.null()]).optional().transform((v) => (v === '' ? null : v)),
+  isPinned: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});

@@ -4,24 +4,40 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { daysLeft, fmtDate, fmtDateTime, invoiceNo, orderNo, repairNo } from '@/lib/format';
-import { INVOICE_STATUS, ISP_TYPE, MSG_TYPE, ORDER_STATUS, RATING, REPAIR_FLOW, REPAIR_STATUS, SUB_STATUS } from '@/lib/labels';
+import { CATEGORY, INVOICE_STATUS, ISP_TYPE, MSG_TYPE, ORDER_STATUS, RATING, REPAIR_FLOW, REPAIR_STATUS, SUB_STATUS } from '@/lib/labels';
+import PostCard from '@/components/PostCard';
 import { useToast } from '@/components/toast';
 import { Icon, Logo } from '@/components/icons';
-import { Badge, Button, Money, Select, Spinner, StatusBadge, Textarea, cx } from '@/components/ui';
+import { Badge, Button, Modal, Money, SearchInput, Select, Spinner, StatusBadge, Textarea, cx } from '@/components/ui';
 
 export default function CustomerPortal() {
   const { token } = useParams();
   const toast = useToast();
   const [c, setC] = useState(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState('repairs');
+  const [tab, setTab] = useState('home');
+  const [catalog, setCatalog] = useState(null);
 
   const load = useCallback(() => {
     api(`/api/portal/${token}`)
       .then((d) => setC(d.customer))
       .catch((e) => setError(e.message));
+    api(`/api/portal/${token}/catalog`)
+      .then((d) => setCatalog(d))
+      .catch(() => setCatalog((x) => x || { posts: [], products: [] }));
   }, [token]);
   useEffect(load, [load]);
+
+  // تحديث تلقائي: كل دقيقة وعند الرجوع للصفحة — حتى تظهر تغييرات الإدارة مباشرة
+  useEffect(() => {
+    const t = setInterval(() => document.visibilityState === 'visible' && load(), 60000);
+    const onVis = () => document.visibilityState === 'visible' && load();
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [load]);
 
   if (error)
     return (
@@ -43,6 +59,8 @@ export default function CustomerPortal() {
   const unpaid = c.invoices.filter((i) => ['UNPAID', 'PARTIAL'].includes(i.status)).reduce((s, i) => s + (i.total - i.paid), 0);
 
   const tabs = [
+    { v: 'home', l: 'العروض', i: 'megaphone', n: catalog?.posts.length || undefined },
+    { v: 'store', l: 'المتجر', i: 'store' },
     { v: 'repairs', l: 'الصيانة', i: 'wrench', n: activeRepairs.length },
     { v: 'internet', l: 'الإنترنت', i: 'wifi' },
     { v: 'orders', l: 'المشتريات', i: 'receipt' },
@@ -81,7 +99,7 @@ export default function CustomerPortal() {
           ))}
         </div>
 
-        <nav className="card grid grid-cols-4 gap-1 p-1">
+        <nav className="card grid grid-cols-3 gap-1 p-1">
           {tabs.map((t) => (
             <button
               key={t.v}
@@ -94,6 +112,9 @@ export default function CustomerPortal() {
             </button>
           ))}
         </nav>
+
+        {tab === 'home' && <Feed catalog={catalog} onStore={() => setTab('store')} />}
+        {tab === 'store' && <Store token={token} catalog={catalog} toast={toast} onSent={load} />}
 
         {tab === 'repairs' && (
           <section className="space-y-3">
@@ -421,6 +442,149 @@ function Feedback({ token, last, toast }) {
         </div>
       )}
       {sent && rating && <p className="text-sm font-bold text-emerald-600">✓ شكراً، تم تسجيل تقييمك</p>}
+    </section>
+  );
+}
+
+function Feed({ catalog, onStore }) {
+  if (!catalog) return <div className="flex justify-center py-10"><Spinner className="size-6 text-brand" /></div>;
+  const offers = catalog.products.filter((p) => p.isOffer && p.available).slice(0, 8);
+  return (
+    <section className="space-y-4">
+      {offers.length > 0 && (
+        <div className="card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-black">🔥 عروض المتجر</p>
+            <button onClick={onStore} className="text-xs font-bold text-brand">كل المنتجات</button>
+          </div>
+          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">
+            {offers.map((p) => (
+              <button key={p.id} onClick={onStore} className="w-36 shrink-0 text-start">
+                <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-soft">
+                  {p.images?.[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.images[0]} alt={p.name} loading="lazy" className="size-full object-cover" />
+                  ) : (
+                    <Icon name="box" className="size-8 text-navy/20" />
+                  )}
+                </div>
+                <p className="line-clamp-2 text-xs font-extrabold leading-5">{p.name}</p>
+                <Money value={p.sellPrice} className="text-xs text-brand-700" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {catalog.posts.length === 0 && offers.length === 0 ? (
+        <EmptyState icon="megaphone" text="لا توجد عروض حالياً — تابعنا قريباً" />
+      ) : (
+        catalog.posts.map((p) => <PostCard key={p.id} post={p} />)
+      )}
+    </section>
+  );
+}
+
+function Store({ token, catalog, toast, onSent }) {
+  const [cat, setCat] = useState('');
+  const [q, setQ] = useState('');
+  const [view, setView] = useState(null);
+  const [busy, setBusy] = useState(false);
+  if (!catalog) return <div className="flex justify-center py-10"><Spinner className="size-6 text-brand" /></div>;
+
+  const cats = Object.keys(CATEGORY).filter((k) => catalog.products.some((p) => p.category === k));
+  const ql = q.trim().toLowerCase();
+  const list = catalog.products.filter(
+    (p) => (!cat || p.category === cat) && (!ql || [p.name, p.brand, p.model].filter(Boolean).join(' ').toLowerCase().includes(ql))
+  );
+
+  async function inquire(p) {
+    setBusy(true);
+    try {
+      await api(`/api/portal/${token}/messages`, {
+        method: 'POST',
+        body: { type: p.available ? 'ORDER' : 'STOCK', referenceId: p.id, content: `${p.available ? 'أرغب بطلب' : 'أستفسر عن توفر'}: ${p.name} — السعر ${Math.round(p.sellPrice).toLocaleString('en-US')} د.ع` },
+      });
+      toast.success('تم إرسال طلبك للمحل، راح نتواصل وياك قريباً');
+      setView(null);
+      onSent();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <SearchInput value={q} onChange={setQ} placeholder="ابحث عن جهاز أو إكسسوار..." />
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
+        {[['', 'الكل'], ...cats.map((k) => [k, CATEGORY[k]])].map(([k, l]) => (
+          <button
+            key={k}
+            onClick={() => setCat(k)}
+            className={cx('shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ring-1', cat === k ? 'bg-navy text-white ring-navy' : 'bg-white text-navy/60 ring-navy/10')}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+      {list.length === 0 ? (
+        <EmptyState icon="store" text="لا توجد منتجات في هذا القسم" />
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {list.map((p) => (
+            <button key={p.id} onClick={() => setView(p)} className={cx('card relative flex flex-col p-3 text-start', !p.available && 'opacity-60')}>
+              {p.isOffer && <Badge tone="orange" className="absolute top-2 start-2 z-[1]">عرض</Badge>}
+              <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-soft">
+                {p.images?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.images[0]} alt={p.name} loading="lazy" className="size-full object-cover" />
+                ) : (
+                  <Icon name="box" className="size-8 text-navy/20" />
+                )}
+              </div>
+              <p className="line-clamp-2 min-h-[2.5rem] text-sm font-extrabold leading-5">{p.name}</p>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                <Money value={p.sellPrice} className="text-sm text-brand-700" />
+                {p.oldPrice > p.sellPrice && <span className="text-[11px] text-navy/40 line-through">{Math.round(p.oldPrice).toLocaleString('en-US')}</span>}
+              </div>
+              <span className={cx('mt-1 text-[11px] font-bold', p.available ? 'text-emerald-600' : 'text-red-500')}>{p.available ? 'متوفر' : 'غير متوفر حالياً'}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <Modal
+        open={Boolean(view)}
+        onClose={() => setView(null)}
+        title={view?.name}
+        subtitle={view ? [CATEGORY[view.category], view.brand, view.model].filter(Boolean).join(' • ') : ''}
+        footer={
+          <Button className="w-full" icon="send" loading={busy} onClick={() => inquire(view)}>
+            {view?.available ? 'اطلب هذا المنتج' : 'أعلمني عند التوفر'}
+          </Button>
+        }
+      >
+        {view && (
+          <div className="space-y-3">
+            {view.images?.length > 0 && (
+              <div className="no-scrollbar -mx-5 flex snap-x gap-2 overflow-x-auto px-5">
+                {view.images.map((u) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={u} src={u} alt="" className="aspect-square w-[85%] shrink-0 snap-center rounded-2xl bg-soft object-cover" />
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-baseline gap-2">
+              <Money value={view.sellPrice} className="text-2xl text-brand-700" />
+              {view.oldPrice > view.sellPrice && <span className="text-sm text-navy/40 line-through">{Math.round(view.oldPrice).toLocaleString('en-US')} د.ع</span>}
+              {view.isOffer && <Badge tone="orange">عرض</Badge>}
+            </div>
+            <p className={cx('text-sm font-bold', view.available ? 'text-emerald-600' : 'text-red-500')}>{view.available ? '✓ متوفر في المحل' : 'غير متوفر حالياً'}</p>
+            {view.description && <p className="whitespace-pre-line text-sm leading-7 text-navy/70">{view.description}</p>}
+          </div>
+        )}
+      </Modal>
     </section>
   );
 }
